@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="csrf-token" th:content="${_csrf.token}">
+    <meta name="csrf-header" th:content="${_csrf.headerName}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>DocsHelper — Dashboard</title>
+    <style>
+    :root {
+      --border-width: 2px;
+      --border-coverage: 75%;
+      color-scheme: dark;
+      --bg: #0e0d0b; --surface: #1b1916; --surface-raised: #24211d;
+      --surface-soft: rgba(20, 34, 55, .72); --border: #34302a;
+      --border-bright: #494139; --focus-ring: #e6d5b8; --text: #f3efe9;
+      --muted: #b8ada1; --subtle: #a1978c; --accent: #e6d5b8;
+      --accent-light: #b1a5ff; --cyan: #59dfd8; --success: #6ae9ba;
+      --danger: #ff9dab; --shadow: 0 32px 100px rgba(0, 0, 0, .34);
+      --radius: 17px; --radius-sm: 10px;
+    }
+
+    /* Use exact fractional borders when they align to device pixels. */
+    @media (resolution: 2dppx), (resolution: 4dppx), (resolution: 6dppx), (resolution: 8dppx) {
+      :root { --border-width: 1.5px; --border-coverage: 100%; }
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { min-height: 100vh; margin: 0; color: var(--text); background: var(--bg); font: 400 14px/1.48 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; isolation: isolate; -webkit-font-smoothing: antialiased; }
+    body::before { content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none; background: linear-gradient(165deg, #181510, #0e0d0b 72%); }
+    ::selection { color: #17130d; background: #e6d5b8; }
+    [hidden] { display: none !important; }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .45; }
+    button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 40px; padding: 9px 16px; border: var(--border-width) solid transparent; border-radius: 10px; color: white; background: #e6d5b8; box-shadow: none; font-size: 12px; font-weight: 750; line-height: 1.3; transition: transform 400ms ease, filter 400ms ease, background-color 400ms ease, border-color 400ms ease; text-align: center; }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.07); box-shadow: none; }
+    .btn:active:not(:disabled) { transform: none; }
+    .btn-secondary { background: #26211b; border-color: color-mix(in srgb, var(--border-bright) var(--border-coverage), transparent); box-shadow: none; color: #eee4d6; }
+    .btn-secondary:hover:not(:disabled) { box-shadow: none; background: #372d22; }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      flex: 0 0 32px;
+      border: var(--border-width) solid color-mix(in srgb, #c4af90 var(--border-coverage), transparent);
+      border-radius: 10px;
+      color: #17130d;
+      background: #e6d5b8;
+      box-shadow: none;
+      transition: transform 400ms ease, background-color 400ms ease;
+    }
+    .brand-mark svg { display: block; width: 18px; height: 18px; fill: currentColor; stroke: none; }
+    .brand-name { display: block; color: #f3efe9; letter-spacing: -.6px; font-size: 19px; font-weight: 800; line-height: 1.2; }
+    .aurora-brand:hover .brand-mark { transform: translateY(-1px); }
+    .aurora-field {
+      border: var(--border-width) solid color-mix(in srgb, var(--border-bright) var(--border-coverage), transparent);
+      border-radius: var(--radius-sm);
+      background: #151310;
+      color: var(--text);
+      transition: border-color 400ms ease, background-color 400ms ease;
+    }
+    .aurora-field:focus {
+      outline: 2px solid var(--focus-ring); outline-offset: -2px;
+      background-color: #201c17;
+    }
+    @media (max-width: 720px) {
+      .brand-mark { width: 30px; height: 30px; flex-basis: 30px; }
+      .brand-name { font-size: 17px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+      .btn:hover:not(:disabled), .aurora-brand:hover .brand-mark { transform: none; }
+    }
+    a { color: inherit; text-decoration: none; }
+    .shell { min-height: 100vh; display: grid; grid-template-columns: 238px minmax(0, 1fr); }
+    .sidebar { z-index: 7; position: sticky; top: 0; height: 100vh; padding: 23px 14px 19px; border-right: var(--border-width) solid color-mix(in srgb, var(--border) var(--border-coverage), transparent); background: linear-gradient(180deg, #181510, #0e0d0b); display: flex; flex-direction: column; }
+    .brand { display: flex; align-items: center; gap: 9px; padding: 0 8px 17px; border-bottom: var(--border-width) solid color-mix(in srgb, var(--border) var(--border-coverage), transparent); cursor: pointer; user-select: none; -webkit-user-select: none; transition: color 250ms ease; }
+    .brand:hover .brand-name { color: #fff; }
+    .breadcrumb-link { color: inherit; cursor: pointer; user-select: none; -webkit-user-select: none; transition: color 250ms ease; }
+    .breadcrumb-link:hover { color: #fff; }
+    .breadcrumb .divider-txt { padding: 0 10px; color: #695e52; }
+    .status-dot { --dot-color: var(--accent); position: relative; display: inline-block; flex: 0 0 auto; width: var(--dot-size, 6px); height: var(--dot-size, 6px); border-radius: 50%; background: var(--dot-color); box-shadow: 0 0 10px color-mix(in srgb, var(--dot-color) 45%, transparent); }
+    .status-dot::after { content: ""; position: absolute; inset: 0; border: var(--border-width) solid color-mix(in srgb, var(--dot-color) var(--border-coverage), transparent); border-radius: inherit; pointer-events: none; animation: status-pulse 2.6s ease-out infinite; }
+    .topbar-status { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; border: var(--border-width) solid color-mix(in srgb, var(--border) var(--border-coverage), transparent); border-radius: 30px; color: var(--muted); font-size: 11px; font-weight: 650; background: rgba(36, 33, 29, .65); }
+    .eyebrow { display: inline-flex; align-items: center; gap: 9px; color: var(--accent); font-size: 10px; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }
+    .eyebrow .tiny-line { width: 16px; height: 1px; background: #bfa988; }
+    .sidebar-footer { margin-top: auto; padding-top: 18px; display: grid; gap: 11px; }
+    .sidebar-foot { display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 0; color: #7f756a; font-size: 10px; }
+    .sidebar-foot > span { display: flex; align-items: center; gap: 6px; }
+    .app-switch { display: flex; align-items: center; gap: 11px; width: 100%; padding: 11px 12px; border: var(--border-width) solid color-mix(in srgb, rgba(161, 148, 255, .32) var(--border-coverage), transparent); border-radius: 12px; background: linear-gradient(145deg, rgba(88, 72, 168, .18), rgba(27, 25, 22, .85)); color: #f3efe9; user-select: none; transition: transform 300ms ease, border-color 300ms ease, background-color 300ms ease; }
+    .app-switch:hover { transform: translateY(-1px); border-color: color-mix(in srgb, rgba(184, 173, 255, .55) var(--border-coverage), transparent); background: linear-gradient(145deg, rgba(104, 86, 196, .26), rgba(36, 33, 29, .92)); }
+    .app-switch-mark { display: grid; place-items: center; width: 30px; height: 30px; flex: 0 0 30px; border-radius: 9px; border: var(--border-width) solid color-mix(in srgb, #7464c9 var(--border-coverage), transparent); background: #5546a6; color: #e4ddff; }
+    .app-switch-mark svg { width: 15px; height: 15px; fill: currentColor; }
+    .app-switch-copy { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+    .app-switch-copy strong { font-size: 12px; font-weight: 760; line-height: 1.25; color: #f5f2ff; }
+    .app-switch-copy small { font-size: 10px; color: var(--muted); line-height: 1.3; margin-top: 2px; }
+    .app-switch-arrow { font-size: 13px; color: #c8beff; flex: 0 0 auto; transition: transform 250ms ease; }
+    .app-switch:hover .app-switch-arrow { transform: translate(2px, -2px); }
+    .brand-sub { display: block; margin-top: 3px; color: var(--subtle); font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+    .nav-caption { margin: 27px 12px 10px; font-size: 10px; font-weight: 800; letter-spacing: .13em; color: #a1978c; text-transform: uppercase; }
+    .nav-link { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 13px; border: var(--border-width) solid transparent; border-radius: 10px; background: none; color: #b8ada1; text-align: left; font-size: 13px; font-weight: 650; transition: color 400ms ease, background-color 400ms ease, border-color 400ms ease; }
+    .nav-link:hover:not(:disabled) { color: #f3efe9; background: rgba(230, 213, 184, .08); }
+    .content { min-width: 0; }
+    .topbar { position: sticky; top: 0; z-index: 5; min-height: 71px; padding: 14px clamp(20px, 3vw, 46px); display: flex; align-items: center; justify-content: space-between; gap: 17px; border-bottom: var(--border-width) solid color-mix(in srgb, var(--border) var(--border-coverage), transparent); background: rgba(23, 20, 16, .93); backdrop-filter: blur(18px); }
+    .topbar-left, .topbar-right { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .breadcrumb { color: #b8ada1; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .breadcrumb strong { color: #f3efe9; font-weight: 750; }
+    @keyframes status-pulse {
+      0% { opacity: .55; transform: scale(1); }
+      65%, 100% { opacity: 0; transform: scale(2.6); }
+    }
+    .page { width: min(1560px, 100%); margin: 0 auto; padding: 27px clamp(20px, 3vw, 46px) 70px; }
+    h1, h2, h3, h4, p { margin-top: 0; }
+    .page-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 23px; }
+    .page-title h1 { margin: 5px 0 5px; font-size: clamp(25px, 2.7vw, 34px); line-height: 1.2; letter-spacing: -.055em; font-weight: 830; }
+    .page-title p { margin: 0; color: var(--muted); font-size: 12px; }
+    .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; border: var(--border-width) solid color-mix(in srgb, var(--border) var(--border-coverage), transparent); border-radius: 9px; color: var(--muted); background: rgba(38, 33, 27, .78); transition: background-color 300ms ease, color 300ms ease, border-color 300ms ease; }
+    .icon-btn:hover:not(:disabled) { background: rgba(230, 213, 184, .12); color: var(--text); border-color: color-mix(in srgb, var(--border-bright) var(--border-coverage), transparent); }
+    .file-row .icon-btn:hover:not(:disabled) { color: var(--danger); border-color: color-mix(in srgb, rgba(255, 157, 171, .32) var(--border-coverage), transparent); background: rgba(184, 65, 90, .14); }
+    .icon-btn:disabled { opacity: .26; }
+    .detail-panel { position: sticky; top: 73px; min-width: 0; overflow: hidden; border: var(--border-width) solid color-mix(in srgb, var(--border-bright) var(--border-coverage), transparent); border-radius: 16px; background: linear-gradient(155deg, #211d17, #181510 72%); box-shadow: 0 22px 63px rgba(0,0,0,.18); }
+    .modal-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 17px 20px 15px; border-bottom: var(--border-width) solid color-mix(in srgb, var(--border) var(--border-coverage), transparent); background: var(--surface-raised); }
+    .modal-top h2 { margin: 0; font-size: 18px; line-height: 1.3; letter-spacing: -.03em; font-weight: 780; }
+    .modal-top p { margin: 0; color: var(--muted); font-size: 11px; }
+    .sidebar { padding: 17px 12px 15px; }
+    .nav-caption { margin: 20px 11px 8px; }
+    .nav-link { padding: 10px 12px; font-size: 12px; gap: 9px; }
+    .topbar { min-height: 59px; padding: 10px clamp(16px,2.4vw,30px); }
+    .page { width: min(1200px,100%); padding: 22px clamp(16px,2.4vw,30px) 42px; }
+    .page-title { margin-bottom: 17px; }
+    .page-title h1 { font-size: clamp(23px,3vw,32px); }
+    .page-title p { font-size: 12px; }
+    .breadcrumb { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .topbar-right { flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; }
+
+    /* DocsHelper conversation inside the LearnAuditor dashboard shell. */
+    .shell { height: 100dvh; min-height: 0; grid-template-columns: 248px minmax(0, 1fr); }
+    .sidebar { min-height: 0; height: 100dvh; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #494139 transparent; }
+    .library-label { margin: 20px 11px 7px; }
+    .library-list { display: grid; gap: 4px; }
+    .library-list .nav-link { padding: 9px 10px; min-width: 0; overflow-wrap: anywhere; }
+    .library-list .nav-link.active { background: #302820; border-color: color-mix(in srgb, #6a5a46 var(--border-coverage), transparent); color: #f3efe9; }
+    .library-list input { accent-color: #e6d5b8; margin: 0; flex: none; }
+    .sidebar-actions { margin-top: 15px; padding-bottom: 16px; border-bottom: var(--border-width) solid color-mix(in srgb, var(--border) var(--border-coverage), transparent); }
+    .new-chat { width: 100%; }
+    .sidebar-actions + .library-label { margin-top: 16px; }
+    .brand-mark { font-size: 18px; font-weight: 700; }
+    .btn { color: #17130d; }
+    .btn-secondary { color: #eee4d6; }
+    .content { display: flex; flex-direction: column; min-height: 0; }
+    .topbar { position: static; flex: 0 0 auto; }
+    .page.workspace-page { flex: 1; min-height: 0; display: flex; flex-direction: column; padding-bottom: clamp(14px, 3vw, 28px); }
+    .page-title { margin-bottom: 16px; flex: 0 0 auto; }
+    .chat-panel { position: static; min-height: 0; flex: 1; display: flex; flex-direction: column; }
+    .chat-panel .modal-top { flex: 0 0 auto; margin: 0; padding: 13px 20px; align-items: center; }
+    .chat-log { flex: 1; min-height: 0; overflow: auto; padding: clamp(14px, 3vw, 28px); scrollbar-width: thin; scrollbar-color: #494139 transparent; }
+    .chat-thread { width: min(100%, 760px); margin: 0 auto; }
+    .message { display: grid; justify-items: start; gap: 5px; margin-bottom: 18px; }
+    .message.user { justify-items: end; }
+    .message-sender { color: var(--muted); font-size: 11px; font-weight: 700; }
+    .message-content { max-width: min(86%, 66ch); padding: 11px 14px; border: var(--border-width) solid color-mix(in srgb, var(--border) var(--border-coverage), transparent); border-radius: var(--radius-sm); background: var(--surface); font-size: 14px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .message.user .message-content { background: #302820; border-color: color-mix(in srgb, #685740 var(--border-coverage), transparent); }
+    .page-error { width: min(100%, 760px); margin: 0 auto 10px; padding: 9px 12px; border: var(--border-width) solid color-mix(in srgb, var(--danger) 35%, var(--border)); border-radius: var(--radius-sm); color: var(--danger); background: var(--surface); overflow-wrap: anywhere; }
+    .chat-composer { margin: 0; padding: 12px clamp(14px, 3vw, 28px); border-top: var(--border-width) solid color-mix(in srgb, var(--border) var(--border-coverage), transparent); background: rgba(25, 22, 17, .92); }
+    .composer-inner { display: flex; gap: 8px; width: min(100%, 760px); margin-inline: auto; flex-wrap: wrap; }
+    .composer-inner input { flex: 1 1 240px; min-width: 0; padding: 8px 12px; font-size: 16px; }
+    .btn-exam { background: #5546a6; border-color: color-mix(in srgb, #7c6ce0 var(--border-coverage), transparent); color: #f3effe; }
+    .btn-exam:hover:not(:disabled) { background: #6453bf; }
+    .exam-ready-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 13px; border: var(--border-width) solid color-mix(in srgb, #7c6ce0 var(--border-coverage), transparent); border-radius: 9px; background: #5546a6; color: #f5f2ff; font-size: 12px; font-weight: 750; transition: filter 250ms ease, transform 250ms ease; }
+    .exam-ready-link:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .upload-control { position: relative; overflow: hidden; }
+    .upload-control:focus-within { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+    .upload-control input { opacity: 0; position: absolute; inset: 0; width: 100%; cursor: pointer; }
+    .menu-toggle, .menu-backdrop, .menu-btn { display: none; }
+    .menu-btn { background: #26211b; color: #e6d5b8; }
+    .menu-btn:hover:not(:disabled) { background: #372d22; color: #f3efe9; border-color: #6a5a46; }
+    @media (max-width: 760px) {
+        .shell { display: flex; }
+        .content { flex: 1; }
+        .sidebar { visibility: hidden; position: fixed; inset: 0 auto 0 0; z-index: 20; width: min(290px, 86vw); height: 100dvh; padding: 17px 12px 15px; transform: translateX(-100%); transition: transform 350ms ease, visibility 350ms; border-right: var(--border-width) solid color-mix(in srgb, var(--border) var(--border-coverage), transparent); border-bottom: 0; }
+        .sidebar .brand, .sidebar .nav-caption { display: flex; }
+        .menu-toggle:checked ~ .shell .sidebar { visibility: visible; transform: none; }
+        .menu-toggle:checked + .menu-backdrop { display: block; position: fixed; inset: 0; z-index: 19; background: #0009; }
+        .menu-btn { display: inline-flex; }
+        .topbar { min-height: 56px; padding: 9px 14px; }
+        .topbar-status { display: none; }
+        .page.workspace-page { padding: 14px 12px 20px; }
+        .page-title { margin-bottom: 10px; }
+        .page-title h1 { font-size: 22px; }
+        .message-content { max-width: 96%; }
+    }
+    @media (max-height: 500px) {
+        .page-title { display: none; }
+    }
+
+    .file-row label, .file-row a { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; cursor: pointer; }
+    .file-row form { flex: 0 0 auto; margin: 0; }
+    .file-row label span { overflow-wrap: anywhere; }
+    .file-row .icon-btn { width: 27px; height: 27px; min-height: 27px; }
+    .library-empty { margin: 0 12px; color: var(--muted); font-size: 12px; }
+    .btn.btn-cancel { background: #8e3c3b; color: #fff; }
+    .btn-copy { padding: 3px 8px; border: 0; border-radius: 6px; color: var(--muted); background: transparent; font-size: 11px; opacity: 0; transition: opacity 400ms ease, color 400ms ease, background-color 400ms ease; }
+    .message:hover .btn-copy, .btn-copy:focus-visible { opacity: 1; }
+    .btn-copy:hover { background: var(--surface-raised); color: var(--text); }
+    @media (hover: none) { .btn-copy { opacity: 1; } }
+    </style>
+</head>
+<body>
+<input type="checkbox" id="menuToggle" class="menu-toggle" aria-hidden="true">
+<label for="menuToggle" class="menu-backdrop" aria-hidden="true"></label>
+<div class="shell">
+  <aside class="sidebar" aria-label="Pliki i rozmowy">
+    <a class="brand aurora-brand" th:href="@{/dashboard}" href="/dashboard" aria-label="DocsHelper — strona główna">
+      <span class="brand-mark" aria-hidden="true">▤</span>
+      <div><span class="brand-name">DocsHelper</span><span class="brand-sub">Dashboard</span></div>
+    </a>
+    <div class="sidebar-actions">
+      <button type="button" id="newChat" onclick="newChat()" class="btn new-chat">＋ Nowa rozmowa</button>
+    </div>
+    <h2 class="nav-caption library-label">Baza wiedzy</h2>
+    <div id="files" class="library-list">
+      <div class="nav-link file-row" th:each="file : ${uploadedFiles}">
+        <label>
+          <input type="checkbox" class="file-checkbox" th:value="${file}"
+                 th:checked="${selectedContextFiles != null and selectedContextFiles.contains(file)}"
+                 th:disabled="${!#strings.isEmpty(activeReplyId)}" onchange="saveFileSelection()">
+          <span th:text="${file}">Notatki.pdf</span>
+        </label>
+        <form th:action="@{/api/knowledge/delete}" method="post" onsubmit="removeLibraryFile(event)">
+          <input type="hidden" name="fileName" th:value="${file}">
+          <button type="submit" class="icon-btn file-delete" aria-label="Usuń plik"
+                  th:disabled="${!#strings.isEmpty(activeReplyId) and selectedContextFiles.contains(file)}">×</button>
+        </form>
+      </div>
+      <p id="emptyLibrary" class="library-empty" th:hidden="${!#lists.isEmpty(uploadedFiles)}">Brak plików</p>
+    </div>
+    <h2 class="nav-caption library-label">Historia rozmów</h2>
+    <nav id="history" class="library-list" aria-label="Rozmowy" th:fragment="history"
+         th:attr="data-conversation-title=${conversationTitle}">
+      <div class="nav-link file-row" th:each="chat : ${chats}" th:classappend="${chat.id == currentChatId} ? 'active'">
+        <a th:href="@{/dashboard(chatId=${chat.id})}" th:text="${chat.title}"
+           th:attr="aria-current=${chat.id == currentChatId ? 'page' : null}">Rozmowa</a>
+        <form th:action="@{/dashboard/chats/delete}" method="post">
+          <input type="hidden" name="chatId" th:value="${chat.id}">
+          <button type="submit" class="icon-btn" aria-label="Usuń rozmowę"
+                  th:attr="data-current-chat-control=${chat.id == currentChatId ? 'true' : null}"
+                  th:disabled="${chat.id == currentChatId and !#strings.isEmpty(activeReplyId)}">×</button>
+        </form>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <a class="app-switch" th:href="${learnauditorUrl}" href="http://localhost:8080/dashboard">
+        <span class="app-switch-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false"><path d="M12 1.5 14.9 9.1 22.5 12 14.9 14.9 12 22.5 9.1 14.9 1.5 12 9.1 9.1Z"/></svg>
+        </span>
+        <span class="app-switch-copy">
+          <strong>Przejdź do LearnAuditora</strong>
+          <small>Studio i panel egzaminów</small>
+        </span>
+        <span class="app-switch-arrow" aria-hidden="true">↗</span>
+      </a>
+      <div class="sidebar-foot"><span><span class="status-dot" aria-hidden="true"></span> Developed by Filipesz</span><span>Aurora UI</span></div>
+    </div>
+  </aside>
+  <div class="content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button type="button" id="menuButton" class="icon-btn menu-btn" aria-label="Otwórz menu" aria-expanded="false">☰</button>
+        <div class="breadcrumb"><a class="breadcrumb-link" th:href="@{/dashboard}" href="/dashboard">DocsHelper</a> <span class="divider-txt">/</span> <strong id="topbarTitle" th:text="${conversationTitle}">Nowa rozmowa</strong></div>
+      </div>
+      <div class="topbar-right">
+        <span class="topbar-status"><span class="status-dot" aria-hidden="true"></span> Asystent dokumentów wspierany przez AI</span>
+        <form th:action="@{/dashboard/files}" method="post" enctype="multipart/form-data">
+          <input type="hidden" name="chatId" th:value="${currentChatId}">
+          <label class="btn btn-secondary upload-control">＋ Wgraj plik
+            <input type="file" id="upload" name="file" aria-label="Wgraj plik"
+                   accept=".pdf,.docx,.doc,.txt,.rtf,.md,.csv,.png,.jpg,.jpeg,.webp" required onchange="this.form.submit()">
+          </label>
+        </form>
+      </div>
+    </header>
+    <main class="page workspace-page">
+      <div class="page-title"><div><span class="eyebrow"><span class="tiny-line"></span> STUDIO WIEDZY</span><h1>Rozmowa z dokumentami</h1><p>Analiza notatek, dopytywanie AI i generowanie egzaminów z wybranych plików.</p></div></div>
+      <section class="detail-panel chat-panel" aria-labelledby="conversationTitle">
+        <div class="modal-top"><h2 id="conversationTitle" th:text="${conversationTitle}">Nowa rozmowa</h2></div>
+        <div class="chat-log"><div id="chat" class="chat-thread" aria-label="Wiadomości">
+          <p id="welcomeMsg" th:if="${#lists.isEmpty(messages)}">Wybierz pliki z bazy wiedzy i wpisz pytanie.</p>
+          <div th:each="msg : ${messages}" class="message" th:classappend="${msg.sender}">
+            <span class="message-sender" th:text="${msg.sender == 'user' ? 'Ty' : 'DocsHelper'}">DocsHelper</span>
+            <div class="message-content" th:text="${msg.text}">Wiadomość</div>
+            <button type="button" class="btn-copy" onclick="copyMessageText(this)">Kopiuj</button>
+          </div>
+        </div></div>
+        <form id="composer" class="chat-composer" onsubmit="sendQuestion(event)"
+              th:attr="data-reply-id=${activeReplyId},data-active-question=${activeQuestion}">
+          <p id="pageError" class="page-error" role="alert" hidden th:hidden="${pageError == null}" th:text="${pageError}"></p>
+          <input type="hidden" id="chatId" th:value="${currentChatId}">
+          <div class="composer-inner">
+            <input type="text" id="question" class="aurora-field" aria-label="Pytanie do dokumentów" placeholder="Napisz pytanie…" required autocomplete="off">
+            <button type="button" id="exportExamBtn" class="btn btn-exam" onclick="generateLearnauditorExam()" disabled title="Wygeneruj egzamin z zaznaczonych plików (opcjonalnie wpisz temat w polu pytania)">✦ Test w LearnAuditorze</button>
+            <button type="submit" id="submitBtn" class="btn" disabled>Wyślij</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+</div>
+<script>
+    const chat = document.getElementById('chat');
+    const chatLog = document.querySelector('.chat-log');
+    const submitBtn = document.getElementById('submitBtn');
+    const exportExamBtn = document.getElementById('exportExamBtn');
+    const composer = document.getElementById('composer');
+    const chatId = document.getElementById('chatId').value;
+    const questionInput = document.getElementById('question');
+    const pageError = document.getElementById('pageError');
+    const csrfHeader = document.querySelector('meta[name="csrf-header"]').content;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+    let activeEventSource = null;
+    let isGenerating = false;
+    let currentReplyId = composer.dataset.replyId || '';
+    let pendingFileSelection = null;
+
+    let currentQuestionText = '';
+    let currentUserDiv = null;
+    let currentAiDiv = null;
+
+    chatLog.scrollTop = chatLog.scrollHeight;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (currentReplyId) {
+            currentQuestionText = composer.dataset.activeQuestion || '';
+            startGeneratingState();
+            observeReply('/api/messages/replies/stream?' + new URLSearchParams({ chatId, replyId: currentReplyId }));
+        } else {
+            validateInputState();
+        }
+    });
+
+    window.addEventListener('pagehide', () => activeEventSource?.close());
+    window.addEventListener('pageshow', event => {
+        if (event.persisted && isGenerating) window.location.reload();
+    });
+
+    questionInput.addEventListener('input', () => {
+        validateInputState();
+    });
+
+    function validateInputState() {
+        if (isGenerating) return;
+
+        const selectedFilesCount = document.querySelectorAll('.file-checkbox:checked').length;
+        const hasText = questionInput.value.trim().length > 0;
+
+        if (selectedFilesCount === 0) {
+            questionInput.disabled = true;
+            questionInput.placeholder = "Zaznacz co najmniej jeden plik w Bazie wiedzy...";
+            submitBtn.disabled = true;
+            exportExamBtn.disabled = true;
+        } else {
+            questionInput.disabled = false;
+            questionInput.placeholder = "Napisz pytanie...";
+            submitBtn.disabled = !hasText || pendingFileSelection !== null;
+            exportExamBtn.disabled = pendingFileSelection !== null;
+        }
+    }
+
+    function showError(message) {
+        pageError.textContent = message;
+        pageError.hidden = !message;
+    }
+
+    function postForm(url, body) {
+        return fetch(url, {
+            method: 'POST',
+            headers: { Accept: 'application/json', [csrfHeader]: csrfToken },
+            body
+        });
+    }
+
+    function newChat() {
+        window.location.href = '/dashboard?chatId=session-' + Date.now();
+    }
+
+    function saveFileSelection() {
+        if (isGenerating) return;
+        const selectedFiles = Array.from(document.querySelectorAll('.file-checkbox:checked')).map(cb => cb.value);
+
+        const formData = new URLSearchParams();
+        formData.append('chatId', chatId);
+        selectedFiles.forEach(file => formData.append('files', file));
+
+        const request = (pendingFileSelection ?? Promise.resolve())
+            .then(() => postForm('/api/chats/files', formData)).then(async response => {
+            if (!response.ok) {
+                const error = await response.json().catch(() => null);
+                showError(error?.message || 'Nie udało się zapisać wyboru plików.');
+            }
+        }).catch(() => showError('Nie udało się zapisać wyboru plików.'));
+
+        pendingFileSelection = request;
+        validateInputState();
+        request.then(() => {
+            if (pendingFileSelection === request) {
+                pendingFileSelection = null;
+                validateInputState();
+            }
+        });
+    }
+
+    async function removeLibraryFile(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const row = form.closest('.file-row');
+        const button = form.querySelector('button');
+        if (button.disabled) return;
+        button.dataset.deleting = 'true';
+        button.disabled = true;
+        try {
+            const response = await postForm(form.action, new URLSearchParams(new FormData(form)));
+            if (!response.ok) {
+                const error = await response.json().catch(() => null);
+                showError(error?.message || 'Nie udało się usunąć pliku.');
+                return;
+            }
+            row.remove();
+            document.getElementById('emptyLibrary').hidden = Boolean(document.querySelector('.file-checkbox'));
+            showError('');
+            validateInputState();
+        } catch {
+            showError('Nie udało się usunąć pliku.');
+        } finally {
+            delete button.dataset.deleting;
+            button.disabled = isGenerating && row.querySelector('.file-checkbox').checked;
+        }
+    }
+
+    async function sendQuestion(e) {
+        e.preventDefault();
+
+        if (isGenerating) {
+            cancelGeneration();
+            return;
+        }
+
+        const q = questionInput.value.trim();
+        if (!q || pendingFileSelection !== null) return;
+
+        const selectedFiles = Array.from(document.querySelectorAll('.file-checkbox:checked')).map(cb => cb.value);
+        if (selectedFiles.length === 0) {
+            showError('Zaznacz co najmniej jeden plik w Bazie wiedzy.');
+            validateInputState();
+            return;
+        }
+
+        showError('');
+        currentQuestionText = q;
+
+        const welcome = document.getElementById('welcomeMsg');
+        if (welcome) welcome.hidden = true;
+
+        currentUserDiv = document.createElement('div');
+        currentUserDiv.className = 'message user';
+        currentUserDiv.innerHTML = `<span class="message-sender">Ty</span><div class="message-content">${escapeHtml(q)}</div><button class="btn-copy" onclick="copyMessageText(this)">Kopiuj</button>`;
+        chat.appendChild(currentUserDiv);
+
+        currentAiDiv = document.createElement('div');
+        currentAiDiv.className = 'message ai';
+        const aiContent = document.createElement('div');
+        aiContent.className = 'message-content';
+        aiContent.textContent = 'Generuję odpowiedź...';
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'btn-copy';
+        copyBtn.setAttribute('onclick', 'copyMessageText(this)');
+        copyBtn.innerText = 'Kopiuj';
+
+        const aiSender = document.createElement('span');
+        aiSender.className = 'message-sender';
+        aiSender.textContent = 'DocsHelper';
+        currentAiDiv.append(aiSender, aiContent);
+        currentAiDiv.appendChild(copyBtn);
+        chat.appendChild(currentAiDiv);
+
+        chatLog.scrollTop = chatLog.scrollHeight;
+        questionInput.value = '';
+
+        startGeneratingState();
+
+        const params = new URLSearchParams({ chatId, question: q });
+        selectedFiles.forEach(file => params.append('files', file));
+        try {
+            const response = await postForm('/api/messages/replies', params);
+            if (!response.ok) {
+                const error = await response.json().catch(() => null);
+                failGeneration(error?.message || 'Nie udało się wysłać pytania.');
+                return;
+            }
+            const { replyId } = await response.json();
+            currentReplyId = replyId;
+            submitBtn.disabled = false;
+            observeReply('/api/messages/replies/stream?' + new URLSearchParams({ chatId, replyId }), aiContent);
+        } catch {
+            failGeneration('Nie udało się wysłać pytania.');
+        }
+    }
+
+    async function generateLearnauditorExam() {
+        if (isGenerating || pendingFileSelection !== null) return;
+
+        const selectedFiles = Array.from(document.querySelectorAll('.file-checkbox:checked')).map(cb => cb.value);
+        if (selectedFiles.length === 0) {
+            showError('Zaznacz co najmniej jeden plik w Bazie wiedzy.');
+            validateInputState();
+            return;
+        }
+
+        const topic = questionInput.value.trim();
+        const userLabel = topic
+            ? `Przygotuj test do LearnAuditora: ${topic}`
+            : 'Przygotuj test do LearnAuditora z wybranych plików.';
+
+        showError('');
+        currentQuestionText = topic;
+
+        const welcome = document.getElementById('welcomeMsg');
+        if (welcome) welcome.hidden = true;
+
+        currentUserDiv = document.createElement('div');
+        currentUserDiv.className = 'message user';
+        currentUserDiv.innerHTML = `<span class="message-sender">Ty</span><div class="message-content">${escapeHtml(userLabel)}</div><button type="button" class="btn-copy" onclick="copyMessageText(this)">Kopiuj</button>`;
+        chat.appendChild(currentUserDiv);
+
+        currentAiDiv = document.createElement('div');
+        currentAiDiv.className = 'message ai';
+        const aiContent = document.createElement('div');
+        aiContent.className = 'message-content';
+        aiContent.textContent = 'Przygotowuję egzamin z wybranych notatek i przesyłam szkic do LearnAuditora…';
+
+        const aiSender = document.createElement('span');
+        aiSender.className = 'message-sender';
+        aiSender.textContent = 'DocsHelper';
+        currentAiDiv.append(aiSender, aiContent);
+        chat.appendChild(currentAiDiv);
+
+        chatLog.scrollTop = chatLog.scrollHeight;
+        questionInput.value = '';
+        startGeneratingState(false);
+
+        const params = new URLSearchParams({ chatId });
+        if (topic) params.append('topic', topic);
+        selectedFiles.forEach(file => params.append('files', file));
+
+        try {
+            const response = await postForm('/api/messages/learnauditor-exam', params);
+            if (!response.ok) {
+                const error = await response.json().catch(() => null);
+                failGeneration(error?.message || 'Nie udało się wygenerować egzaminu.');
+                return;
+            }
+            const result = await response.json();
+            aiContent.textContent = result.message;
+            if (result.importUrl) {
+                const actionWrap = document.createElement('div');
+                const openLink = document.createElement('a');
+                openLink.className = 'exam-ready-link';
+                openLink.href = result.importUrl;
+                openLink.textContent = '✦ Otwórz i utwórz test w LearnAuditorze ↗';
+                actionWrap.appendChild(openLink);
+                aiContent.appendChild(actionWrap);
+            }
+            chatLog.scrollTop = chatLog.scrollHeight;
+            stopGeneratingState();
+            refreshConversationHistory();
+        } catch {
+            failGeneration('Nie udało się wygenerować egzaminu.');
+        }
+    }
+
+    function observeReply(url, aiContent) {
+        activeEventSource = new EventSource(url);
+
+        if (aiContent) {
+            const answerText = document.createTextNode('');
+            activeEventSource.onmessage = e => {
+                const { text } = JSON.parse(e.data);
+                if (!answerText.parentNode) {
+                    aiContent.replaceChildren(answerText);
+                }
+                answerText.appendData(text);
+                chatLog.scrollTop = chatLog.scrollHeight;
+            };
+        }
+
+        activeEventSource.addEventListener('done', () => {
+            stopGeneratingState();
+            if (aiContent) {
+                refreshConversationHistory();
+            } else {
+                window.location.reload();
+            }
+        });
+        activeEventSource.addEventListener('cancelled', restoreQuestion);
+        activeEventSource.addEventListener('failed', e => {
+            failGeneration(JSON.parse(e.data).text);
+        });
+        activeEventSource.onerror = () => {
+            failGeneration('Połączenie zostało przerwane. Odśwież rozmowę, żeby sprawdzić wynik.');
+        };
+    }
+
+    async function refreshConversationHistory() {
+        try {
+            const response = await fetch('/dashboard/history?' + new URLSearchParams({ chatId }), { cache: 'no-store' });
+            if (!response.ok) throw new Error();
+            const markup = new DOMParser().parseFromString(await response.text(), 'text/html');
+            const history = markup.getElementById('history');
+            if (!history) throw new Error();
+            document.getElementById('history').replaceWith(history);
+            document.getElementById('conversationTitle').textContent = history.dataset.conversationTitle;
+            const topbarTitle = document.getElementById('topbarTitle');
+            if (topbarTitle) topbarTitle.textContent = history.dataset.conversationTitle;
+            setConversationControlsDisabled(isGenerating);
+        } catch {
+            showError('Odpowiedź została zapisana. Odśwież stronę, żeby zaktualizować historię.');
+        }
+    }
+
+    function failGeneration(message) {
+        restoreQuestion();
+        showError(message);
+    }
+
+    async function cancelGeneration() {
+        const replyId = currentReplyId;
+        if (!replyId || submitBtn.disabled) return;
+        submitBtn.disabled = true;
+        try {
+            const response = await postForm('/api/messages/replies/cancel', new URLSearchParams({ chatId, replyId }));
+            if (!response.ok) {
+                const error = await response.json().catch(() => null);
+                if (currentReplyId === replyId) {
+                    showError(error?.message || 'Nie udało się anulować odpowiedzi. Spróbuj ponownie.');
+                    submitBtn.disabled = false;
+                }
+            }
+        } catch {
+            if (currentReplyId === replyId) {
+                showError('Nie udało się anulować odpowiedzi. Spróbuj ponownie.');
+                submitBtn.disabled = false;
+            }
+        }
+    }
+
+    function restoreQuestion() {
+        currentUserDiv?.remove();
+        currentAiDiv?.remove();
+        const welcome = document.getElementById('welcomeMsg');
+        if (welcome) welcome.hidden = Boolean(chat.querySelector('.message'));
+        questionInput.value = currentQuestionText;
+        stopGeneratingState();
+    }
+
+    function setConversationControlsDisabled(disabled) {
+        document.querySelectorAll('.file-checkbox, [data-current-chat-control]').forEach(control => {
+            control.disabled = disabled;
+        });
+        document.querySelectorAll('.file-delete').forEach(button => {
+            button.disabled = button.dataset.deleting === 'true'
+                || (disabled && button.closest('.file-row').querySelector('.file-checkbox').checked);
+        });
+    }
+
+    function startGeneratingState(allowCancel = true) {
+        isGenerating = true;
+        exportExamBtn.disabled = true;
+        if (allowCancel) {
+            submitBtn.innerText = 'Anuluj';
+            submitBtn.classList.add('btn-cancel');
+            submitBtn.disabled = !currentReplyId;
+        } else {
+            submitBtn.disabled = true;
+        }
+        questionInput.disabled = true;
+        questionInput.placeholder = 'Generuję odpowiedź…';
+        setConversationControlsDisabled(true);
+    }
+
+    function stopGeneratingState() {
+        if (activeEventSource) {
+            activeEventSource.close();
+            activeEventSource = null;
+        }
+        isGenerating = false;
+        submitBtn.innerText = 'Wyślij';
+        submitBtn.classList.remove('btn-cancel');
+        currentReplyId = '';
+        setConversationControlsDisabled(false);
+
+        currentUserDiv = null;
+        currentAiDiv = null;
+
+        validateInputState();
+        if (!questionInput.disabled) {
+            questionInput.focus();
+        }
+    }
+
+    function copyMessageText(btn) {
+        const messageDiv = btn.parentElement;
+        const textToCopy = messageDiv.querySelector('.message-content')?.textContent || '';
+
+        if (textToCopy) {
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalText = btn.innerText;
+                btn.innerText = 'Skopiowano!';
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                }, 1500);
+            });
+        }
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+    }
+
+    const menuToggle = document.getElementById('menuToggle');
+    const menuButton = document.getElementById('menuButton');
+    function updateMenuState() {
+        menuButton.setAttribute('aria-expanded', String(menuToggle.checked));
+    }
+    menuButton.addEventListener('click', () => {
+        menuToggle.checked = !menuToggle.checked;
+        updateMenuState();
+    });
+    menuToggle.addEventListener('change', updateMenuState);
+</script>
+</body>
+</html>
